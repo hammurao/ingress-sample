@@ -14,12 +14,11 @@ spec:
   - name: https
     nodePort: 32024
     port: 443
-    protocol: TCP
     targetPort: 443
   selector:
     name: nginx-ingress
 ---
-apiVersion: apps/v1
+apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: nginx-ingress-controller
@@ -35,58 +34,27 @@ spec:
         name: nginx-ingress
     spec:
       containers:
-      - args:
+        - name: nginx-ingress-controller
+          image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.21.0
+       args:
         - /nginx-ingress-controller
         - --configmap=$(POD_NAMESPACE)/nginx-configuration
-        - --default-backend-service=app-space/default-http-backend
-        env:
+       env:
         - name: POD_NAME
           valueFrom:
             fieldRef:
-              apiVersion: v1
               fieldPath: metadata.name
         - name: POD_NAMESPACE
           valueFrom:
             fieldRef:
-              apiVersion: v1
               fieldPath: metadata.namespace
-        image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.21.0
-        imagePullPolicy: IfNotPresent
-        name: nginx-ingress-controller
         ports:
         - containerPort: 80
           name: http
-          protocol: TCP
         - containerPort: 443
           name: https
-          protocol: TCP
-        resources: {}
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
       serviceAccount: nginx-ingress-serviceaccount
       serviceAccountName: nginx-ingress-serviceaccount
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    app.kubernetes.io/name: ingress-nginx
-    app.kubernetes.io/part-of: ingress-nginx
-  name: nginx-ingress-serviceaccount
-  namespace: ingress-space
-secrets:
-- name: nginx-ingress-serviceaccount-token-9jz8g
----
-apiVersion: v1
-data:
-  ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN5RENDQWJDZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJd01EVXlPREl6TkRNeE1Wb1hEVE13TURVeU5qSXpORE14TVZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTlloCmJENCsxWWUvQlY2U2tJcGNmWTRTYmZmbFNGdnpTYUluWGhFV3RmalZoYkJldHRuMHZDOHB0dndkUEZvYlp0dUYKbUZOV2k2aG42OFVLbjdsUjZ0WTRNdy9aL20wL0Q5aG5lTXN2U21xL3lheFdPcyt4Wk5GRUdvSGRHMm84Wlg2ZApoT2Z4c2Vwdmt0QkhDVldvZEYrWXZYS3NjVUVjSFdOdm9LSEZ5SURZaXhQYVg4ZHVkZk96dHdnblBFNWNJMCtNCkt5TU9MMzNWcEh5bE0wdDhDNU1wTjFMdWFvMlNYSWQyQzVudFNDTFFtYVRMWHlMSjh6RnZLelFKVGxGVWxGQXIKRE90QldJMmJ3MzNHQVFMWFhoVk4xcm1OVkhiOHl6MDk5YStuUFZ1YXdmejFWQVd5RXNncER6ZUsrMk9JeDhYegp5V0RBNGZKeTlzejlTY25weENVQ0F3RUFBYU1qTUNFd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFIMVVwMXNuaTl4TmdRNGNRNG5oVTRGeWZKWm0KSzFQMDlmUlczejM3YWlKODM5ZEt2VjVpbTJ4UnB0SG5ZU1JTRkFQU3NZYWpGU2NnaTUybWRYT3UzOWQ1MmlINwpJOUh5bE4xdk5FeEtzN1BTd0h5TGVXNklVVEdyM1ZCc01Zbm92VE9uZTRkMHN6RnpOS3RvSXlRSStmWkJuekIxClJ6d0FxbW5qNDZxTUE2VW1JL0FQaWhFSUlTYzJycHVxMm5UUXUyeTFUYk9LTnRlRVdZZzJzZGk1S0M1bmsvWlQKd2pWNmtqVUVicDA2QUVKbFNZQ3BsSTdicHB0dml2WUhOOVplOW1xaWN3TVF1RU9OcXdYb0ZyMFVCNmpJY25LNQpveStGc3NPM3lTSmRianVCK3B1TGR6SUdmNTEvVUt4NFh2RHp6ZkpsdWxZTmkyTUttQzlzZnRLU2t0az0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
-  namespace: aW5ncmVzcy1zcGFjZQ==
-  token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNklqUkZOamcyZWpSMGEzWkRhSHBqVFdGT1UyRkJja1pSY1RCSGVUZHVSazVGWDFOc00ySTFjR1kxYjAwaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUpwYm1keVpYTnpMWE53WVdObElpd2lhM1ZpWlhKdVpYUmxjeTVwYnk5elpYSjJhV05sWVdOamIzVnVkQzl6WldOeVpYUXVibUZ0WlNJNkltNW5hVzU0TFdsdVozSmxjM010YzJWeWRtbGpaV0ZqWTI5MWJuUXRkRzlyWlc0dE9XcDZPR2NpTENKcmRXSmxjbTVsZEdWekxtbHZMM05sY25acFkyVmhZMk52ZFc1MEwzTmxjblpwWTJVdFlXTmpiM1Z1ZEM1dVlXMWxJam9pYm1kcGJuZ3RhVzVuY21WemN5MXpaWEoyYVdObFlXTmpiM1Z1ZENJc0ltdDFZbVZ5Ym1WMFpYTXVhVzh2YzJWeWRtbGpaV0ZqWTI5MWJuUXZjMlZ5ZG1salpTMWhZMk52ZFc1MExuVnBaQ0k2SWpBNVpUZGpOakk1TFdZNVpUY3RORFUyWmkwNU1URTJMV0UyTldFMlpUQTNNbVF4TXlJc0luTjFZaUk2SW5ONWMzUmxiVHB6WlhKMmFXTmxZV05qYjNWdWREcHBibWR5WlhOekxYTndZV05sT201bmFXNTRMV2x1WjNKbGMzTXRjMlZ5ZG1salpXRmpZMjkxYm5RaWZRLm5Ld3dhTF9uMXZONUhyZXFxZmIwNHlqMDh0ZUtjWDJpcWZCMTFoblFJVGFoV1VkLW1keHc1QXBsUU9WR25aejFpXzhlek1xa3EyN3dPWU5MbzFFcGJkaC1ZS094SVZhSWNVNkh5ODRYMi1rdTFBTlRkRzNyam5iRUU2N0Q0QkJEM3pSbWc3aWdJaFdBY19QTnF4X0tTZzc4TkFnUEVUcjYwTl8xS3ZidklfQWNiSFU0ZlE3UzN1VXd4RlJUaTN4MTBuSlJNa0VaLTN3U3hlV0VaLU9HaHUya0tYSzRfQTBvRW4yWDJIQ1dDa1Y5akZIWnpvLUQyTThkeWlDQ3VnTEVKTkE0eGphMGtvRWdhRnM4VS1qRlhGMlluTGwybk5oa01BVXpYcE5iempNdjRuMWY0clc2MlBOaElOeVZhNF9rdzlwZU5iLUZRQWpFeGozbWUzemdCZw==
-kind: Secret
-metadata:
-  name: nginx-ingress-serviceaccount-token-9jz8g
-  namespace: ingress-space
-type: kubernetes.io/service-account-token
 ---
 apiVersion: v1
 kind: ConfigMap
